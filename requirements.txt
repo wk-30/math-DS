@@ -3,5 +3,4 @@ matplotlib
 japanize_matplotlib
 plotly.express
 StandardScaler
-linkage
-dendrogram
+scipy
