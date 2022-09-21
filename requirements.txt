@@ -1,2 +1,4 @@
 streamlit
 matplotlib
+japanize_matplotlib
+plotly.express
