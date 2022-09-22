@@ -36,6 +36,11 @@ df.iloc[:, 2:] = df.iloc[:, 2:].mul(df.iloc[:, 1],axis=0)
 #一つ一つの試験としてグループ化する
 df_exam = df.groupby('exam_name').sum()
 
+#軸の作成
+df_exam['数論'] = df_exam['A'] + df_exam['B'] + df_exam['H']+ df_exam['J']+ df_exam['K']
+df_exam['図形'] = df_exam['F'] + df_exam['G'] 
+df_exam['文章題'] = df_exam['C'] + df_exam['D'] + df_exam['E']
+
 #わかりやすい表面的なデータフレームを見せる
 st.write('データの全体像を確認してみましょう')
 
@@ -52,7 +57,53 @@ df_exam_scaled = scaler.fit_transform(df_exam_nomalized)
 #データフレーム化
 df_exam_scaled  = pd.DataFrame(df_exam_scaled, index=df_exam_nomalized.index, columns=df_exam_nomalized.columns)
 
-st.write('樹形図：類似度が近いものから線で結んでいます')
+#クラスタリング
+from sklearn.cluster import KMeans
+kmeans = KMeans(n_clusters=5, random_state=0)
+
+# モデルの学習
+kmeans.fit(df_exam_scaled)
+
+# クラスタリングの適用
+cluster = kmeans.predict(df_exam_scaled)
+
+# データフレームにクラスタリングラベルを追加
+df_exam_scaled['cluster'] = cluster
+
+#入試問題を選択
+st.write('入試問題を選択してください。分野、難度、形式のデータからクラスタリングし、５つに分類します。')
+exam_list = df_exam_scaled.index
+options = st.selectbox(
+    '表示する入試問題を選択：',
+    exam_list
+)
+
+#選択した問題のクラスターラベルを表示
+st.write('選択した入試問題のラベルは5種類中の')
+st.write(
+    df_exam_scaled.loc[options]['cluster'].astype(int)
+    )
+
+#選択した問題と一番類似する問題を表示
+st.write('選択した入試問題と同じような問題があるか、下の散布図にマウスを当てて探してみましょう。')
+
+#クラスタリングして、どのようなグループと近いのか表示。
+
+# # データフレームのデータを３D描画する
+import plotly.express as px
+fig = px.scatter_3d(df_exam_scaled, x='図形', y='文章題', z='数論', color='cluster',symbol='cluster',opacity=0.7,hover_name=df_exam_scaled.index)
+fig.update_traces(textposition='top center')
+
+fig.update_layout(
+    height=800,
+    title_text='3D 散布図'
+)
+
+
+st.plotly_chart(fig)
+
+
+st.write('樹形図：類似度が近いものを線で結んでいます。')
 
 from scipy.cluster.hierarchy import linkage
 Z = linkage(df_exam_scaled,method="ward", metric="euclidean")
@@ -62,12 +113,11 @@ fig2, ax2 = plt.subplots(figsize=(10,10), dpi=400)
 ax2 = dendrogram(Z,
 labels=list(df_exam_scaled.index),
 orientation= 'right',
-
 )
-
+fig2.suptitle('入試問題類似度　樹形図')
 st.pyplot(fig2)
 
-
+st.write('作成者コメント:3D散布図は分野別で３軸を作っているが、難易度、問題形式を反映していない。その意味では、難度、形式まで判定して作られた樹形図で類似度を判定する方が好ましいと考えます。')
 # # index=df_exam_nomalized.index,
 # #データフレーム化
 # df_exam_scaled  = pd.DataFrame(df_exam_scaled, columns=df_exam_nomalized.columns)

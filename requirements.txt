@@ -4,3 +4,4 @@ japanize_matplotlib
 plotly.express
 StandardScaler
 scipy
+KMeans
